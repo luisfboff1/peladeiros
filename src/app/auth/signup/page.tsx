@@ -42,7 +42,7 @@ export default function SignUpPage() {
         },
         body: JSON.stringify({
           name,
-          email: email.toLowerCase(),
+          email,
           password,
         }),
       });

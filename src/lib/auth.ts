@@ -35,8 +35,8 @@ if (!process.env.AUTH_SECRET && !process.env.NEXTAUTH_SECRET) {
 }
 
 const credentialsSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(6),
+  email: z.string().trim().toLowerCase().email(),
+  password: z.string().trim().min(6),
 });
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
@@ -55,7 +55,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           const result = await sql`
             SELECT id, name, email, password_hash, image, email_verified
             FROM users
-            WHERE email = ${email.toLowerCase()}
+            WHERE email = ${email}
           `;
 
           if (result.length === 0) {

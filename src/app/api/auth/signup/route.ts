@@ -5,9 +5,9 @@ import { z } from "zod";
 import logger from "@/lib/logger";
 
 const signupSchema = z.object({
-  name: z.string().min(1, "Nome é obrigatório"),
-  email: z.string().email("Email inválido"),
-  password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres"),
+  name: z.string().trim().min(1, "Nome é obrigatório"),
+  email: z.string().trim().toLowerCase().email("Email inválido"),
+  password: z.string().trim().min(6, "Senha deve ter no mínimo 6 caracteres"),
 });
 
 export async function POST(request: NextRequest) {
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
 
     // Verificar se o email já existe
     const existingUser = await sql`
-      SELECT id FROM users WHERE email = ${email.toLowerCase()}
+      SELECT id FROM users WHERE email = ${email}
     `;
 
     if (existingUser.length > 0) {
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       INSERT INTO users (name, email, password_hash)
       VALUES (
         ${name},
-        ${email.toLowerCase()},
+        ${email},
         ${passwordHash}
       )
       RETURNING id, name, email
