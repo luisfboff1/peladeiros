@@ -5,6 +5,9 @@ import logger from "@/lib/logger";
 /**
  * API endpoint to run database migrations
  * This adds missing columns to ensure the database schema is up to date
+ * 
+ * Security: Can be called without auth during initial setup when password_hash column is missing.
+ * After migration, consider adding authentication or removing this endpoint.
  */
 export async function POST() {
   try {

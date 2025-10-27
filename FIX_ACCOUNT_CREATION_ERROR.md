@@ -53,6 +53,14 @@ Você tem **3 opções** para resolver:
    }
    ```
 
+**⚠️ IMPORTANTE - Segurança:** 
+- Este endpoint não requer autenticação porque é usado para corrigir o banco quando a autenticação está quebrada
+- A operação é segura (apenas adiciona coluna se não existir, não remove dados)
+- Após executar a migração, considere:
+  - Remover o endpoint `/api/db/migrate` deletando o arquivo `src/app/api/db/migrate/route.ts`
+  - Ou adicionar autenticação ao endpoint
+  - Ou configurar regras de firewall no Vercel para bloquear acesso público
+
 ### Opção 2: Neon Console (SQL Editor)
 
 1. Acesse [Neon Console](https://console.neon.tech/)
