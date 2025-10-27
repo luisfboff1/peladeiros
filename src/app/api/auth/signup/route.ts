@@ -65,6 +65,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check if error is a NeonDbError with code 42703 (undefined_column)
+    if (error && typeof error === 'object' && 'code' in error && error.code === '42703') {
+      logger.error({ error }, "Erro ao criar usuário: coluna password_hash não existe no banco de dados");
+      return NextResponse.json(
+        { 
+          error: "Erro de configuração do banco de dados. Execute a migração acessando /api/db/migrate (POST) para corrigir.",
+          migrationNeeded: true
+        },
+        { status: 500 }
+      );
+    }
+
     logger.error({ error }, "Erro ao criar usuário");
     return NextResponse.json(
       { error: "Erro ao criar conta. Tente novamente." },
