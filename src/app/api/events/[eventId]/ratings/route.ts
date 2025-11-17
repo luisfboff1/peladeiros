@@ -36,16 +36,15 @@ export async function GET(
       );
     }
 
-    // Get user's individual ratings for this event
-    const userRatings = await sql`
-      SELECT
-        rated_user_id as player_id,
-        score as rating
+    // Get user's vote for this event (only one player can be voted)
+    const [userVote] = await sql`
+      SELECT rated_user_id as player_id
       FROM player_ratings
       WHERE event_id = ${eventId} AND rater_user_id = ${user.id}
+      LIMIT 1
     `;
 
-    return NextResponse.json({ ratings: userRatings });
+    return NextResponse.json({ vote: userVote || null });
   } catch (error) {
     if (error instanceof Error && error.message === "Não autenticado") {
       return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
@@ -77,7 +76,7 @@ export async function POST(
       );
     }
 
-    const { ratedUserId, score, tags } = validation.data;
+    const { ratedUserId } = validation.data;
 
     const [event] = await sql`
       SELECT group_id FROM events WHERE id = ${eventId}
@@ -95,19 +94,39 @@ export async function POST(
 
     if (!attendance) {
       return NextResponse.json(
-        { error: "Você precisa ter participado do evento para avaliar" },
+        { error: "Você precisa ter participado do evento para votar" },
         { status: 403 }
       );
     }
 
-    // Can't rate yourself
+    // Can't vote for yourself
     if (ratedUserId === user.id) {
       return NextResponse.json(
-        { error: "Você não pode se autoavaliar" },
+        { error: "Você não pode votar em si mesmo" },
         { status: 400 }
       );
     }
 
+    // Check if rated user attended the event
+    const [ratedAttendance] = await sql`
+      SELECT * FROM event_attendance
+      WHERE event_id = ${eventId} AND user_id = ${ratedUserId} AND status = 'yes'
+    `;
+
+    if (!ratedAttendance) {
+      return NextResponse.json(
+        { error: "Você só pode votar em jogadores que participaram do evento" },
+        { status: 400 }
+      );
+    }
+
+    // First, delete any existing vote from this user for this event
+    await sql`
+      DELETE FROM player_ratings
+      WHERE event_id = ${eventId} AND rater_user_id = ${user.id}
+    `;
+
+    // Insert new vote with MVP tag
     const [rating] = await sql`
       INSERT INTO player_ratings (
         event_id,
@@ -120,19 +139,15 @@ export async function POST(
         ${eventId},
         ${user.id},
         ${ratedUserId},
-        ${score},
-        ${tags ? tags : null}
+        NULL,
+        ARRAY['mvp']
       )
-      ON CONFLICT (event_id, rater_user_id, rated_user_id)
-      DO UPDATE SET
-        score = ${score},
-        tags = ${tags ? tags : null}
       RETURNING *
     `;
 
     logger.info(
-      { eventId, raterUserId: user.id, ratedUserId, score },
-      "Player rated"
+      { eventId, raterUserId: user.id, ratedUserId },
+      "Player voted as MVP"
     );
 
     return NextResponse.json({ rating });
