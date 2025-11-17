@@ -70,7 +70,6 @@ type MyStats = {
   saves: number;
   yellowCards: number;
   redCards: number;
-  averageRating: string | null;
   wins: number;
   losses: number;
   mvpCount: number;
@@ -145,7 +144,6 @@ export default async function GroupPage({ params }: RouteParams) {
     saves: 0,
     yellowCards: 0,
     redCards: 0,
-    averageRating: null,
     wins: 0,
     losses: 0,
     mvpCount: 0,
@@ -281,15 +279,6 @@ export default async function GroupPage({ params }: RouteParams) {
           if (wl.is_winner === true) myStats.wins = parseInt(wl.count);
           if (wl.is_winner === false) myStats.losses = parseInt(wl.count);
         });
-
-        const ratingResult = await sql`
-          SELECT AVG(score) as avg_rating
-          FROM player_ratings
-          WHERE event_id = ANY(${myEventIds}) AND rated_user_id = ${user.id}
-        `;
-        if (ratingResult[0]?.avg_rating) {
-          myStats.averageRating = parseFloat(ratingResult[0].avg_rating).toFixed(1);
-        }
 
         const tagsResult = await sql`
           SELECT UNNEST(tags) as tag, COUNT(*) as count
